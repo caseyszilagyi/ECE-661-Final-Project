@@ -1,3 +1,7 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.nn.init as init
 
 '''
 Properly implemented ResNet-s for CIFAR10 as described in paper [1].
