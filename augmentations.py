@@ -5,14 +5,18 @@ import matplotlib.pyplot as plt
 '''
 This file allows for images to be augmented according to the
 CIFAR implementation of SimCLR. To augment a batch of images, 
-pass the batch to augment(). Augmenting a batch will augment 
-each image in the batch twice, according to Algorithm 1 from 
-the SimCLR paper. 
+pass the batch to augment(). To efficiently augment a batch
+twice (needed for SimCLR training), call augment with the
+optional parameter augment_twice=True. This will return
+a list of tensors, which can be unpacked as:
+aug1, aug2 = augment(batch, True)
 
-To visualize how this is working, call visualize(). 
+To visualize how augmentation works, call visualize(). 
 '''
 
-def augment(images):
+def augment(images, augment_twice=False):
+  num_images = len(images)
+
   # define augmentation
   augmentation = transforms.Compose([
       _get_random_crop(),
@@ -20,31 +24,22 @@ def augment(images):
       *_get_color_distortion(s=0.5)
   ])
 
+  if augment_twice:
+    images = images.repeat((2, 1, 1, 1))
+
   # perform augmentation
-  transformation_fnc = transforms.Lambda(lambda images: torch.stack([augmentation(image) for image in images])) 
-  first_transformation = transformation_fnc(images)
-  second_transformation = transformation_fnc(images)
+  transformation_fnc = transforms.Lambda(lambda batch: torch.stack([augmentation(image) for image in batch]))
+  transformed_images = transformation_fnc(images)
+  if augment_twice:
+    return transformed_images.split(num_images)
+  return transformation_fnc(images)
 
-  # assemble augmentations
-  original_size = first_transformation.size()
-  size = (2*original_size[0], *original_size[1:])
-  x = torch.empty(size)
-  for idx, (first, second) in enumerate(zip(first_transformation, second_transformation)):
-    x[2*idx] = first
-    x[2*idx+1] = second
-  return x
-
-def visualize(size=5, show=True):
-  images = _get_batch(size=size)
-  transformed_images = augment(images)
+def visualize(size=5, num_transformations=2, show=True):
+  batch = _get_batch(size=size)
+  transformed_batches = [augment(batch) for _ in range(num_transformations)]
   if show:
-    if len(images) == len(transformed_images):
-      for base, transformed in zip(images, transformed_images):
-        _display_images([base, transformed])
-    elif 2*len(images) == len(transformed_images):
-      for base, trans1, trans2 in zip(images, transformed_images[::2], transformed_images[1::2]):
-        _display_images([base, trans1, trans2])
-
+    for images in zip(batch, *transformed_batches):
+      _display_images(images)
 
 def _get_random_crop():
   return transforms.RandomResizedCrop(32)
@@ -68,11 +63,15 @@ def _get_batch(size=128):
   trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
   train_loader = torch.utils.data.DataLoader(trainset, batch_size=size, shuffle=True, num_workers=16)
 
-  for batch_idx, (inputs, targets) in enumerate(train_loader):
+  for inputs, _ in train_loader:
     return inputs
 
 def _display_images(images):
-  fig, ax = plt.subplots(1, len(images))
-  for idx in range(len(images)):
-    ax[idx].imshow(images[idx].permute(1,2,0))
+  fig, axis = plt.subplots(1, len(images))
+  for idx, (ax, image) in enumerate(zip(axis, images)):
+    ax.imshow(image.permute(1,2,0))
+    if idx == 0:
+      ax.set_title('original')
+    else:
+      ax.set_title("aug {:d}".format(idx-1))
   plt.show()
