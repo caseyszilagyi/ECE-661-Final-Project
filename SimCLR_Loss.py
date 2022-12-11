@@ -4,7 +4,7 @@ import scipy
 from torch.nn import functional as F
 
 
-class SimCLR_Loss(nn.module):
+class NTXent_Loss(nn.module):
 
     def __init__(self, batch_size, temp):
         super(SimCLR_Loss, self).__init__()
@@ -13,20 +13,20 @@ class SimCLR_Loss(nn.module):
 
     def sim_all_pairs(self, z1, z2):
         # compute the cosine similarity matrix between every pair of z's
-        # z1, z2: z vectors obtained from different augmentations, batch_size x 2048
+        # z1, z2: z vectors obtained from different augmentations, batch_size x 128
         # credit to https://stackoverflow.com/questions/60467264/pairwise-similarity-matrix-between-a-set-of-vectors-in-pytorch
         # for computing the pairwise similarities
         # could be further optimized given that this is a symmetric matrix with diagonal values=1
         # only need to store the upper/lower triangle matrix if batchsize gets huge
         z_mat = torch.cat((z1, z2), 0)
-        assert z_mat.shape == torch.Size([2 * self.batch_size, 2048])
+        assert z_mat.shape == torch.Size([2 * self.batch_size, 128])
         sim_mat = F.cosine_similarity(z_mat[None, :, :], z_mat[:, None, :], dim=-1)
         assert sim_mat.shape == torch.Size([2 * self.batch_size, 2 * self.batch_size])
         return sim_mat
 
     def sim_pos_pairs(self, z1, z2):
         # compute the pairwise similarity between every positive pairs
-        # z1, z2: z vectors obtained from different augmentations, batch_size x 2048
+        # z1, z2: z vectors obtained from different augmentations, batch_size x 128
         pair_sim = F.cosine_similarity(z1, z2, dim=1)
         assert pair_sim.shape == torch.Size([self.batch_size])
         return pair_sim
