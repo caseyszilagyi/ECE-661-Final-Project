@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-class SimCLR_Model(nn.module):
+class SimCLR_Model(nn.Module):
 
     def __init__(self, base_encoder):
         super(SimCLR_Model, self).__init__()

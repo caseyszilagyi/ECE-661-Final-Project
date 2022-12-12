@@ -4,10 +4,10 @@ import scipy
 from torch.nn import functional as F
 
 
-class NTXent_Loss(nn.module):
+class NTXent_Loss(nn.Module):
 
     def __init__(self, batch_size, temp):
-        super(SimCLR_Loss, self).__init__()
+        super(NTXent_Loss, self).__init__()
         self.batch_size = batch_size
         self.temp = temp
 
@@ -19,26 +19,26 @@ class NTXent_Loss(nn.module):
         # could be further optimized given that this is a symmetric matrix with diagonal values=1
         # only need to store the upper/lower triangle matrix if batchsize gets huge
         z_mat = torch.cat((z1, z2), 0)
-        assert z_mat.shape == torch.Size([2 * self.batch_size, 128])
+        # assert z_mat.shape == torch.Size([2 * self.batch_size, 128])
         sim_mat = F.cosine_similarity(z_mat[None, :, :], z_mat[:, None, :], dim=-1)
-        assert sim_mat.shape == torch.Size([2 * self.batch_size, 2 * self.batch_size])
+        # assert sim_mat.shape == torch.Size([2 * self.batch_size, 2 * self.batch_size])
         return sim_mat
 
     def sim_pos_pairs(self, z1, z2):
         # compute the pairwise similarity between every positive pairs
         # z1, z2: z vectors obtained from different augmentations, batch_size x 128
         pair_sim = F.cosine_similarity(z1, z2, dim=1)
-        assert pair_sim.shape == torch.Size([self.batch_size])
+        # assert pair_sim.shape == torch.Size([self.batch_size])
         return pair_sim
 
     def forward(self, z1, z2):
         # compute the NTXent loss, vectorized
         pos_pairs = torch.exp(self.sim_pos_pairs(z1, z2) / self.temp) # batch_size
-        assert pos_pairs.shape == torch.Size([self.batch_size])
+        # assert pos_pairs.shape == torch.Size([self.batch_size])
         numerator = torch.stack((pos_pairs, pos_pairs), dim=0).permute(1, 0).reshape(-1) # 2 * batchsize, with ordering [s12, s21, s34, s43, ...]
-        assert numerator.shape == torch.Size([2 * self.batch_size])
-        denom = torch.exp(torch.sum(self.sim_all_pairs(z1, z2), dim=-1) / self.temp) - torch.exp(1 / self.temp) # 2 * batch_size
-        assert denom.shape == torch.Size([2 * self.batch_size])
+        # assert numerator.shape == torch.Size([2 * self.batch_size])
+        denom = torch.sum(torch.exp(self.sim_all_pairs(z1, z2) / self.temp), dim=-1) - torch.exp(torch.tensor(1. / self.temp)) # 2 * batch_size
+        # assert denom.shape == torch.Size([2 * self.batch_size])
         result = torch.sum(-torch.log(numerator / denom)) / 2 * self.batch_size
         return result
 
