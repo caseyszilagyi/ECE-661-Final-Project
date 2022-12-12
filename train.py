@@ -21,7 +21,7 @@ def SimCLR_Train(net, device, batch_size, train_loader, num_epoch, temp, lr=0.5,
                                     weight_decay=1e-6))
     if lr_scheduler == 'cosine':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epoch)
-        scheduler = create_lr_scheduler_with_warmup(scheduler, warmup_start_value=0, warmup_duration=10)
+        # scheduler = create_lr_scheduler_with_warmup(scheduler, warmup_start_value=0, warmup_duration=10)
 
     train_loss_list = []
     model_checkpoint = 'SimCLR_batchsize=' + str(batch_size) + '_lr=' + str(lr) + '_optim=' + optim + '_temp=' + str(temp) + '.pt'
