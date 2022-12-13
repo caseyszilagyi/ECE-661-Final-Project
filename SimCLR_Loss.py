@@ -53,7 +53,7 @@ class NTXent_Loss_updated(nn.Module):
 
     def forward(self, z1, z2):
         z_mat = torch.stack((z1,z2), dim=1).view(z1.size()[0]*2,z1.size()[1])
-        sim_mat = F.cosine_similarity(z_mat[None, :, :], z_mat[:, None, :], dim=-1) / temp
+        sim_mat = F.cosine_similarity(z_mat[None, :, :], z_mat[:, None, :], dim=-1) / self.temp
         exp_sim_mat = torch.exp(sim_mat)
 
 
@@ -62,7 +62,7 @@ class NTXent_Loss_updated(nn.Module):
 
         sum_ = sums - diagonal_entries
 
-        pair_sim = torch.exp(F.cosine_similarity(z1, z2, dim=1)/temp)
+        pair_sim = torch.exp(F.cosine_similarity(z1, z2, dim=1)/self.temp)
         pair_sim = pair_sim.repeat_interleave(2)
 
         numdom = pair_sim / sum_
