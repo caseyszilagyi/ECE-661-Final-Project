@@ -42,3 +42,34 @@ class NTXent_Loss(nn.Module):
         result = torch.sum(-torch.log(numerator / denom)) / 2 * self.batch_size
         return result
 
+
+
+class NTXent_Loss_updated(nn.Module):
+
+    def __init__(self, batch_size, temp):
+        super(NTXent_Loss, self).__init__()
+        self.batch_size = batch_size
+        self.temp = temp
+
+    def forward(self, z1, z2):
+        z_mat = torch.stack((z1,z2), dim=1).view(z1.size()[0]*2,z1.size()[1])
+        sim_mat = F.cosine_similarity(z_mat[None, :, :], z_mat[:, None, :], dim=-1) / temp
+        exp_sim_mat = torch.exp(sim_mat)
+
+
+        sums = exp_sim_mat.sum(dim=1)
+        diagonal_entries = exp_sim_mat.diagonal()
+
+        sum = sums - diagonal_entries
+
+        pair_sim = torch.exp(F.cosine_similarity(z1, z2, dim=1)/temp)
+        pair_sim = pair_sim.repeat_interleave(2)
+
+        numdom = pair_sim / sum
+
+        loss = -torch.log(numdom)
+
+        total_loss = loss.sum()
+        return total_loss
+
+    
