@@ -47,7 +47,7 @@ class NTXent_Loss(nn.Module):
 class NTXent_Loss_updated(nn.Module):
 
     def __init__(self, batch_size, temp):
-        super(NTXent_Loss, self).__init__()
+        super(NTXent_Loss_updated, self).__init__()
         self.batch_size = batch_size
         self.temp = temp
 
