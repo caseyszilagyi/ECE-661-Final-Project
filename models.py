@@ -22,7 +22,7 @@ class Linear_Eval(nn.Module):
     def __init__(self, base):
         super(Linear_Eval, self).__init__()
         self.base = base
-        self.linear_layer = nn.Linear(128, 10, bias=True)
+        self.linear_layer = nn.Linear(64, 10, bias=True)
 
     def forward(self, input_batch):
         h = self.base(input_batch)

@@ -58,6 +58,9 @@ def Linear_Eval_Train(net, device, train_loader, num_epoch, lr=0.1, optim='sgd',
     if optim == 'sgd':
         optimizer = torch.optim.SGD((param for param in net.parameters() if param.requires_grad), lr=lr,
                                     weight_decay=0)
+    if optim == 'adam':
+        optimizer = torch.optim.Adam((param for param in net.parameters() if param.requires_grad), lr=lr,
+                                     weight_decay=1e-6)
     if lr_scheduler == 'cosine':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epoch, eta_min=1e-3)
 
@@ -66,6 +69,7 @@ def Linear_Eval_Train(net, device, train_loader, num_epoch, lr=0.1, optim='sgd',
     best_acc = 0
 
     for epoch in range(num_epoch):
+        print('Epoch ', epoch + 1)
         net.train()
         train_loss = 0
         train_acc = 0
@@ -82,11 +86,11 @@ def Linear_Eval_Train(net, device, train_loader, num_epoch, lr=0.1, optim='sgd',
             optimizer.step()
             if lr_scheduler != 'None':
                 scheduler.step()
-            train_acc += torch.sum(pred == label) / actual_batch_size
+            train_acc += torch.sum(torch.argmax(pred, dim=-1) == label) / actual_batch_size
         print("Training Loss: {}, Training Acc: {}".format(train_loss / len(train_loader), train_acc / len(train_loader)))
         if best_acc < train_acc / len(train_loader):
             best_acc = train_acc / len(train_loader)
-        print('Best Train Acc: ', best_acc)
+        print('Best Train Acc: ', best_acc.item())
         train_loss_list.append(train_loss / len(train_loader))
         train_acc_list.append(train_acc / len(train_loader))
 
