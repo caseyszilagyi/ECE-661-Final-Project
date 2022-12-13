@@ -69,7 +69,7 @@ class NTXent_Loss_updated(nn.Module):
 
         loss = -torch.log(numdom)
 
-        total_loss = loss.sum()
+        total_loss = loss.sum() / (2 * self.batch_size)
         return total_loss
 
     
