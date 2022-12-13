@@ -60,12 +60,12 @@ class NTXent_Loss_updated(nn.Module):
         sums = exp_sim_mat.sum(dim=1)
         diagonal_entries = exp_sim_mat.diagonal()
 
-        sum = sums - diagonal_entries
+        sum_ = sums - diagonal_entries
 
         pair_sim = torch.exp(F.cosine_similarity(z1, z2, dim=1)/temp)
         pair_sim = pair_sim.repeat_interleave(2)
 
-        numdom = pair_sim / sum
+        numdom = pair_sim / sum_
 
         loss = -torch.log(numdom)
 
