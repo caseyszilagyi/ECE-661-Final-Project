@@ -39,7 +39,7 @@ class NTXent_Loss(nn.Module):
         # assert numerator.shape == torch.Size([2 * self.batch_size])
         denom = torch.sum(torch.exp(self.sim_all_pairs(z1, z2) / self.temp), dim=-1) - torch.exp(torch.tensor(1. / self.temp)) # 2 * batch_size
         # assert denom.shape == torch.Size([2 * self.batch_size])
-        result = torch.sum(-torch.log(numerator / denom)) / 2 * self.batch_size
+        result = torch.sum(-torch.log(numerator / denom)) / (2 * self.batch_size)
         return result
 
 

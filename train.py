@@ -3,7 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from augmentations import augment
 from SimCLR_Loss import NTXent_Loss
-
+from torchlars import LARS
 
 # credit to https://www.zhihu.com/question/523869554 for training function template
 def SimCLR_Train(net, device, batch_size, train_loader, num_epoch, temp, lr=1e-4, optim='adam', lr_scheduler='None'):
@@ -13,14 +13,17 @@ def SimCLR_Train(net, device, batch_size, train_loader, num_epoch, temp, lr=1e-4
     elif optim == 'adam':
         optimizer = torch.optim.Adam((param for param in net.parameters() if param.requires_grad), lr=lr,
                                     weight_decay=1e-6)
+    elif optim == 'lars':
+        optimizer = LARS(torch.optim.SGD((param for param in net.parameters() if param.requires_grad), lr=lr,
+                                    weight_decay=1e-6))
+
     if lr_scheduler == 'cosine':
-        if optim == 'sgd':
+        if optim == 'sgd' or 'lars':
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epoch, eta_min=1e-3)
         else:
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epoch)
 
     train_loss_list = []
-    model_checkpoint = 'SimCLR_batchsize=' + str(batch_size) + '_lr=' + str(lr) + '_optim=' + optim + '_temp=' + str(temp) + '_epoch=' + str(num_epoch) +'.pt'
 
     for epoch in range(num_epoch):
         print('Epoch ' + str(epoch+1))
@@ -44,10 +47,12 @@ def SimCLR_Train(net, device, batch_size, train_loader, num_epoch, temp, lr=1e-4
             train_loss += loss
         # print out average training loss and acc over all minibatches
         print("Epoch: {}, Training Loss: {}".format(epoch+1, train_loss / len(train_loader)))
-        train_loss_list.append(train_loss / len(train_loader))
-
-    print('Finish training, saving model...')
-    torch.save(net.state_dict(), model_checkpoint)
+        train_loss_list.append((train_loss / len(train_loader)).item())
+        if (epoch + 1) % 50 == 0: # save checkpoint for every 50 epochs
+            print('Saving model at epoch ', epoch+1)
+            model_checkpoint = 'SimCLR_update_batchsize=' + str(batch_size) + '_lr=' + str(
+                lr) + '_optim=' + optim + '_temp=' + str(temp) + '_epoch=' + str(epoch + 1) + '.pt'
+            torch.save(net.state_dict(), model_checkpoint)
     return train_loss_list
 
 def Linear_Eval_Train(net, device, train_loader, num_epoch, lr=0.1, optim='sgd', lr_scheduler='cosine'):
